@@ -19,6 +19,15 @@ export default function Page() {
         <CoinSelector />
       </div>
       <CoinDataTable />
+      <footer className="text-center text-muted-foreground space-y-2">
+        <p>I hope your portfolio moons 🚀</p>
+        <p className="text-center text-muted-foreground">
+          Made by{' '}
+          <a className="underline" href="https://github.com/matiasdiezcanseco" target="_blank" rel="noreferrer">
+            Matias Diez-Canseco
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }

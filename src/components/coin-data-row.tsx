@@ -32,12 +32,24 @@ const CoinDataRow: React.FC<{ coinId: string }> = ({ coinId }) => {
   });
 
   useEffect(() => {
-    if (data)
+    if (data) {
       editCoinById(coinId, {
         ...data,
         future_market_cap: data.market_cap * multiplier,
         future_value: data.price * multiplier * qtyOwned,
       });
+    } else {
+      editCoinById(coinId, {
+        ...coin,
+        id: coin?.id || '',
+        name: coin?.name || '',
+        symbol: coin?.symbol || '',
+        market_cap: coin?.market_cap || 0,
+        price: coin?.price || 0,
+        future_market_cap: coin?.market_cap ? coin.market_cap * multiplier : 0,
+        future_value: coin?.price ? coin?.price * multiplier * qtyOwned : 0,
+      });
+    }
   }, [data, qtyOwned, multiplier]);
 
   const handleQtyOwnedChange = (qty: number) => {

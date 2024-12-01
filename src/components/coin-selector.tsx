@@ -23,7 +23,7 @@ const CoinSelector = () => {
       const coinList = await getCoinList();
       return coinList.map((coin) => {
         return {
-          label: coin.name,
+          label: `${coin.name} | ${coin.symbol.toUpperCase()}`,
           value: coin.id,
         };
       });

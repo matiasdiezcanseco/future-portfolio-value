@@ -1,14 +1,15 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { TableCell, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getCoinDataById } from '@/lib/gecko';
 import { useCoinStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { CircleAlert } from 'lucide-react';
 import { useEffect } from 'react';
-
-import { Button } from './ui/button';
-import { Input } from './ui/input';
 
 const CoinDataRow: React.FC<{ coinId: string }> = ({ coinId }) => {
   const coin = useCoinStore((state) => state.selectCoinById(coinId));
@@ -63,7 +64,26 @@ const CoinDataRow: React.FC<{ coinId: string }> = ({ coinId }) => {
     );
   };
 
-  if (error)
+  const TooltipError: React.FC<{ text: string; error: string }> = ({ text, error }) => {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex gap-2 items-center">
+              <CircleAlert className=" h-4 w-4 shrink-0 text-destructive" />
+              <p className="text-destructive underline">{text}</p>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{error}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  console.log(coin);
+  if (error && !coin)
     return (
       <TableRow>
         <TableCell className="text-destructive">{error.message}</TableCell>
@@ -87,13 +107,13 @@ const CoinDataRow: React.FC<{ coinId: string }> = ({ coinId }) => {
         <TableCell>Loading...</TableCell>
       </TableRow>
     );
-  if (data)
+  if (coin)
     return (
       <TableRow>
-        <TableCell>{data.name}</TableCell>
-        <TableCell>{data.symbol}</TableCell>
-        <TableCell>{formatCurrency(data.market_cap)}</TableCell>
-        <TableCell>{formatCurrency(data.price)}</TableCell>
+        <TableCell>{error ? <TooltipError text={coin.name} error={error.message} /> : coin.name}</TableCell>
+        <TableCell>{coin.symbol}</TableCell>
+        <TableCell>{formatCurrency(coin.market_cap)}</TableCell>
+        <TableCell>{formatCurrency(coin.price)}</TableCell>
         <TableCell>
           <Input
             value={qtyOwned}
@@ -104,7 +124,7 @@ const CoinDataRow: React.FC<{ coinId: string }> = ({ coinId }) => {
             min={0}
           />
         </TableCell>
-        <TableCell>{formatCurrency(qtyOwned * data.price)}</TableCell>
+        <TableCell>{formatCurrency(qtyOwned * coin.price)}</TableCell>
         <TableCell>
           <Input
             value={multiplier}
@@ -116,9 +136,9 @@ const CoinDataRow: React.FC<{ coinId: string }> = ({ coinId }) => {
             step={0.2}
           />
         </TableCell>
-        <TableCell>{formatCurrency(multiplier * qtyOwned * data.price)}</TableCell>
-        <TableCell>{formatCurrency(multiplier * data.price)}</TableCell>
-        <TableCell>{formatCurrency(multiplier * data.market_cap)}</TableCell>
+        <TableCell>{formatCurrency(multiplier * qtyOwned * coin.price)}</TableCell>
+        <TableCell>{formatCurrency(multiplier * coin.price)}</TableCell>
+        <TableCell>{formatCurrency(multiplier * coin.market_cap)}</TableCell>
         <TableCell>
           <DeleteButton />
         </TableCell>

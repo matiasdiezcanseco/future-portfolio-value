@@ -34,7 +34,7 @@ const CoinSelector = () => {
   const [value, setValue] = React.useState('');
 
   const filteredCoinList =
-    coinList?.filter((coin) => coin.label.toLowerCase().includes(value?.toLowerCase())).slice(0, 20) || [];
+    coinList?.filter((coin) => coin.label.toLowerCase().includes(value?.toLowerCase())).slice(0, 50) || [];
 
   if (isError) return <p className="text-destructive">Error getting coins...</p>;
   if (isLoading) return <p>Loading...</p>;

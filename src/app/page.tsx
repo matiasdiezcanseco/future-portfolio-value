@@ -10,8 +10,8 @@ export default function Page() {
       <div className="space-y-4">
         <h1 className="text-6xl text-center">Future Portfolio Value</h1>
         <p className="text-center mx-auto max-w-[600px] text-muted-foreground">
-          Input your Coingecko Demo API Key and add the coins your want. Everything is saved locally. Your information
-          never leaves your computer.
+          Input your Coingecko Demo API Key and add the coins your want. Everything is saved
+          locally. Your information never leaves your computer.
         </p>
       </div>
       <div className="space-y-6 max-w-64">
@@ -23,7 +23,12 @@ export default function Page() {
         <p>I hope your portfolio moons 🚀</p>
         <p className="text-center text-muted-foreground">
           Made by{' '}
-          <a className="underline" href="https://github.com/matiasdiezcanseco" target="_blank" rel="noreferrer">
+          <a
+            className="underline"
+            href="https://github.com/matiasdiezcanseco"
+            target="_blank"
+            rel="noreferrer"
+          >
             Matias Diez-Canseco
           </a>
         </p>

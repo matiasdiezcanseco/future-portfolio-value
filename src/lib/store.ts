@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { CoinDataRow } from './interfaces';
-
 type CredentialsStore = {
   apiKey: string;
   setApiKey: (apiKey: string) => void;
@@ -28,40 +26,81 @@ export const useCredentialsStore = create<
 );
 
 type CoinStore = {
-  coins: CoinDataRow[];
-  addCoin: (coin: CoinDataRow) => void;
-  selectCoinById: (id: string) => CoinDataRow | null;
-  editCoinById: (id: string, coinData: CoinDataRow) => void;
+  coinsIds: string[];
+  addCoinId: (coinId: string) => void;
   deleteCoinById: (id: string) => void;
+
+  coinsInputs: { [key: string]: { multiplier: number; qtyOwned: number } };
+  addCoinInput: (coinInputs: { coinId: string; multiplier: number; qtyOwned: number }) => void;
+  deleteCoinInputById: (id: string) => void;
+  editCoinInputById: (data: { id: string; multiplier?: number; qtyOwned?: number }) => void;
 };
 
-export const useCoinStore = create<CoinStore, [['zustand/persist', CoinStore], ['zustand/devtools', never]]>(
+export const useCoinStore = create<
+  CoinStore,
+  [['zustand/persist', CoinStore], ['zustand/devtools', never]]
+>(
   persist(
     (set, get) => ({
-      coins: [],
-      addCoin: (coin) =>
+      coinsIds: [],
+      addCoinId: (coinId) =>
         set((state) => {
-          const coinExists = state.coins.some((existingCoin) => existingCoin.id === coin.id);
+          const coinExists = state.coinsIds.some((existingCoinId) => existingCoinId === coinId);
           if (coinExists) {
             return state; // If the coin exists, do nothing
           }
           return {
-            coins: [...state.coins, coin], // Otherwise, add the new coin
+            coinsIds: [...state.coinsIds, coinId], // Otherwise, add the new coin
           };
         }),
-      selectCoinById: (id) => {
-        const coin = get().coins.find((coin) => coin.id === id);
-        return coin || null;
+      deleteCoinById: (coinId) => {
+        set((state) => {
+          const newCoinsIds = state.coinsIds.filter((existingCoinId) => existingCoinId !== coinId);
+          return {
+            coinsIds: [...newCoinsIds],
+          };
+        });
       },
-      editCoinById: (id, coinData) =>
+      coinsInputs: {},
+      addCoinInput: (coinInputs) => {
+        const existingCoin = get().coinsInputs[coinInputs.coinId];
+
+        if (!existingCoin || !existingCoin.qtyOwned) {
+          return; // If the coin doesn't exist or it's not owned, do nothing
+        }
+
         set((state) => ({
-          coins: state.coins.map((coin) => (coin.id === id ? { ...coin, ...coinData } : coin)),
-        })),
-      deleteCoinById: (deleteId) =>
-        set((state) => ({
-          coins: state.coins.filter(({ id }) => id !== deleteId),
-        })),
+          ...state,
+          coinsInputs: {
+            ...state.coinsInputs,
+            [coinInputs.coinId]: { ...existingCoin, ...coinInputs },
+          },
+        }));
+      },
+      deleteCoinInputById: (id) => {
+        delete get().coinsInputs[id];
+
+        set(() => ({
+          coinsInputs: { ...get().coinsInputs },
+        }));
+      },
+      editCoinInputById: ({ id, multiplier, qtyOwned }) => {
+        set((state) => {
+          const coin = get().coinsInputs[id];
+          const updatedCoinsInputs = { ...state.coinsInputs };
+          if (multiplier) {
+            updatedCoinsInputs[id] = { ...coin, multiplier };
+          }
+          if (qtyOwned) {
+            updatedCoinsInputs[id] = { ...coin, qtyOwned };
+          }
+          return {
+            coinsInputs: { ...updatedCoinsInputs },
+          };
+        });
+      },
     }),
+
     {
       name: 'coin-store', // Unique key for localStorage
       storage: createJSONStorage(() => localStorage),

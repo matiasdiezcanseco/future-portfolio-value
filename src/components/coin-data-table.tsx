@@ -3,14 +3,12 @@
 import CoinDataRow from '@/components/coin-data-row';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCoinStore } from '@/lib/store';
-import { formatCurrency } from '@/lib/utils';
 import { Fragment } from 'react';
 
 const CoinDataTable: React.FC = () => {
-  const coins = useCoinStore((state) => state.coins);
-  const coinsIds = coins.map(({ id }) => id);
+  const coinsIds = useCoinStore((state) => state.coinsIds);
 
-  const totalFutureValue = coins.reduce((acc, { future_value }) => acc + (future_value || 0), 0);
+  // const totalFutureValue = coins.reduce((acc, { future_value }) => acc + (future_value || 0), 0);
 
   return (
     <div>
@@ -40,9 +38,9 @@ const CoinDataTable: React.FC = () => {
           })}
         </TableBody>
       </Table>
-      <p className="mt-4 text-muted-foreground">
+      {/* <p className="mt-4 text-muted-foreground">
         Total Future Value: <span className="text-primary">{formatCurrency(totalFutureValue)}</span>
-      </p>
+      </p> */}
     </div>
   );
 };

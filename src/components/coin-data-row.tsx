@@ -3,69 +3,63 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getCoinDataById } from '@/lib/gecko';
+import { getCoinList, getCoinsPricesByIds } from '@/lib/gecko';
 import { useCoinStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { CircleAlert } from 'lucide-react';
-import { useEffect } from 'react';
 
 const CoinDataRow: React.FC<{ coinId: string }> = ({ coinId }) => {
-  const coin = useCoinStore((state) => state.selectCoinById(coinId));
-  const { qtyOwned = 0, multiplier = 1 } = coin || {};
-
-  const editCoinById = useCoinStore((state) => state.editCoinById);
+  const coinsIds = useCoinStore((state) => state.coinsIds);
   const deleteCoinById = useCoinStore((state) => state.deleteCoinById);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['coin', coinId],
-    queryFn: async () => {
-      const coinData = await getCoinDataById(coinId);
-      if (!coinData) return;
+  const coinInputs = useCoinStore((state) => state.coinsInputs);
+  const coinInput = coinInputs[coinId] || {};
+  const { qtyOwned = 0, multiplier = 1 } = coinInput;
 
-      editCoinById(coinId, {
-        ...coinData,
+  const editCoinInputById = useCoinStore((state) => state.editCoinInputById);
+
+  const { data: coinsPrices } = useQuery({
+    queryKey: ['coinsPrices', coinsIds.join(',')],
+    queryFn: async () => {
+      const coinsPrices = await getCoinsPricesByIds(coinsIds);
+      return coinsPrices;
+    },
+    enabled: Boolean(coinsIds.length),
+  });
+
+  const coinMarketData = coinsPrices
+    ? coinsPrices[coinId]
+    : {
+        usd: 0,
+        usd_market_cap: 0,
+      };
+
+  const { data: coinList } = useQuery({
+    queryKey: ['coinsList'],
+    queryFn: async () => {
+      const coinList = await getCoinList();
+      return coinList.map((coin) => {
+        return {
+          label: `${coin.name} | ${coin.symbol.toUpperCase()}`,
+          value: coin.id,
+          name: coin.name,
+          symbol: coin.symbol,
+        };
       });
-      return coinData;
     },
   });
 
-  useEffect(() => {
-    if (data) {
-      editCoinById(coinId, {
-        ...data,
-        future_market_cap: data.market_cap * multiplier,
-        future_value: data.price * multiplier * qtyOwned,
-      });
-    } else {
-      editCoinById(coinId, {
-        ...coin,
-        id: coin?.id || '',
-        name: coin?.name || '',
-        symbol: coin?.symbol || '',
-        market_cap: coin?.market_cap || 0,
-        price: coin?.price || 0,
-        future_market_cap: coin?.market_cap ? coin.market_cap * multiplier : 0,
-        future_value: coin?.price ? coin?.price * multiplier * qtyOwned : 0,
-      });
-    }
-  }, [data, qtyOwned, multiplier]);
+  const coinName = coinList?.find((coin) => coin.value === coinId)?.name;
+  const coinSymbol = coinList?.find((coin) => coin.value === coinId)?.symbol;
 
   const handleQtyOwnedChange = (qty: number) => {
-    if (!coin) return;
-    editCoinById(coinId, {
-      ...coin,
-      qtyOwned: qty || 0,
-    });
+    if (!coinInput) return;
+    editCoinInputById({ id: coinId, qtyOwned: qty });
   };
 
-  const handleMultiplierChange = (multiplier: number) => {
-    if (!coin) return;
-    editCoinById(coinId, {
-      ...coin,
-      multiplier: multiplier || 1,
-    });
+  const handleMultiplierChange = (multi: number) => {
+    if (!coinInput) return;
+    editCoinInputById({ id: coinId, multiplier: multi });
   };
 
   const DeleteButton = () => {
@@ -76,86 +70,61 @@ const CoinDataRow: React.FC<{ coinId: string }> = ({ coinId }) => {
     );
   };
 
-  const TooltipError: React.FC<{ text: string; error: string }> = ({ text, error }) => {
+  if (!coinInput)
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex gap-2 items-center">
-              <CircleAlert className=" h-4 w-4 shrink-0 text-destructive" />
-              <p className="text-destructive underline">{text}</p>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{error}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <TableRow>
+        <TableCell className="text-destructive">There was an error</TableCell>
+        <TableCell></TableCell>
+        <TableCell></TableCell>
+        <TableCell></TableCell>
+        <TableCell></TableCell>
+        <TableCell></TableCell>
+        <TableCell></TableCell>
+        <TableCell></TableCell>
+        <TableCell></TableCell>
+        <TableCell></TableCell>
+        <TableCell>
+          <DeleteButton />
+        </TableCell>
+      </TableRow>
     );
-  };
 
-  console.log(coin);
-  if (error && !coin)
-    return (
-      <TableRow>
-        <TableCell className="text-destructive">{error.message}</TableCell>
-        <TableCell></TableCell>
-        <TableCell></TableCell>
-        <TableCell></TableCell>
-        <TableCell></TableCell>
-        <TableCell></TableCell>
-        <TableCell></TableCell>
-        <TableCell></TableCell>
-        <TableCell></TableCell>
-        <TableCell></TableCell>
-        <TableCell>
-          <DeleteButton />
-        </TableCell>
-      </TableRow>
-    );
-  if (isLoading)
-    return (
-      <TableRow>
-        <TableCell>Loading...</TableCell>
-      </TableRow>
-    );
-  if (coin)
-    return (
-      <TableRow>
-        <TableCell>{error ? <TooltipError text={coin.name} error={error.message} /> : coin.name}</TableCell>
-        <TableCell>{coin.symbol}</TableCell>
-        <TableCell>{formatCurrency(coin.market_cap)}</TableCell>
-        <TableCell>{formatCurrency(coin.price)}</TableCell>
-        <TableCell>
-          <Input
-            value={qtyOwned}
-            type="number"
-            onChange={(e) => {
-              handleQtyOwnedChange(parseFloat(e.target.value));
-            }}
-            min={0}
-          />
-        </TableCell>
-        <TableCell>{formatCurrency(qtyOwned * coin.price)}</TableCell>
-        <TableCell>
-          <Input
-            value={multiplier}
-            type="number"
-            onChange={(e) => {
-              handleMultiplierChange(parseFloat(e.target.value));
-            }}
-            min={1}
-            step={0.2}
-          />
-        </TableCell>
-        <TableCell>{formatCurrency(multiplier * qtyOwned * coin.price)}</TableCell>
-        <TableCell>{formatCurrency(multiplier * coin.price)}</TableCell>
-        <TableCell>{formatCurrency(multiplier * coin.market_cap)}</TableCell>
-        <TableCell>
-          <DeleteButton />
-        </TableCell>
-      </TableRow>
-    );
+  return (
+    <TableRow>
+      <TableCell>{coinName}</TableCell>
+      <TableCell>{coinSymbol}</TableCell>
+      <TableCell>{formatCurrency(coinMarketData.usd_market_cap)}</TableCell>
+      <TableCell>{formatCurrency(coinMarketData.usd)}</TableCell>
+      <TableCell>
+        <Input
+          value={qtyOwned}
+          type="number"
+          onChange={(e) => {
+            handleQtyOwnedChange(parseFloat(e.target.value));
+          }}
+          min={0}
+        />
+      </TableCell>
+      <TableCell>{formatCurrency(qtyOwned * coinMarketData.usd)}</TableCell>
+      <TableCell>
+        <Input
+          value={multiplier}
+          type="number"
+          onChange={(e) => {
+            handleMultiplierChange(parseFloat(e.target.value));
+          }}
+          min={1}
+          step={0.2}
+        />
+      </TableCell>
+      <TableCell>{formatCurrency(multiplier * qtyOwned * coinMarketData.usd)}</TableCell>
+      <TableCell>{formatCurrency(multiplier * coinMarketData.usd)}</TableCell>
+      <TableCell>{formatCurrency(multiplier * coinMarketData.usd_market_cap)}</TableCell>
+      <TableCell>
+        <DeleteButton />
+      </TableCell>
+    </TableRow>
+  );
 };
 
 export default CoinDataRow;

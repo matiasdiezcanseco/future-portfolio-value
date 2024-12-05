@@ -3,28 +3,24 @@ import axios, { AxiosError } from 'axios';
 import type { Coin, CoinData } from './interfaces';
 import { useCredentialsStore } from './store';
 
-export const getCoinDataById = async (id: string) => {
-  const url = `https://api.coingecko.com/api/v3/coins/${id}`;
+export const getCoinsPricesByIds = async (ids: string[]) => {
+  const url = 'https://api.coingecko.com/api/v3/simple/price';
   const apiKey = useCredentialsStore.getState().apiKey.trim();
 
   try {
-    const { data } = await axios.get(url, {
+    const { data } = await axios.get<{ [key: string]: CoinData }>(url, {
       headers: {
         'x-cg-demo-api-key': apiKey,
       },
+      params: { ids: ids.join(','), include_market_cap: true, vs_currencies: 'usd' },
     });
-    const coinData = {
-      id: data.id,
-      name: data.name,
-      symbol: data.symbol,
-      market_cap: data.market_data.market_cap.usd,
-      price: data.market_data.current_price.usd,
-    };
 
-    return coinData as CoinData;
+    return data;
   } catch (e: unknown) {
-    if (e instanceof AxiosError && e.response?.status === 429) throw new Error('429 Too Many Requests');
-    if (e instanceof AxiosError && e.response?.status) throw new Error(`${e.response.status} There was an error`);
+    if (e instanceof AxiosError && e.response?.status === 429)
+      throw new Error('429 Too Many Requests');
+    if (e instanceof AxiosError && e.response?.status)
+      throw new Error(`${e.response.status} There was an error`);
     if (e instanceof Error) throw new Error(e.message);
   }
 };

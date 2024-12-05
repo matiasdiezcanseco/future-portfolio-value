@@ -4,14 +4,7 @@ export interface Coin {
   name: string;
 }
 
-export interface CoinData extends Coin {
-  market_cap: number;
-  price: number;
-}
-
-export interface CoinDataRow extends CoinData {
-  future_value?: number;
-  future_market_cap?: number;
-  qtyOwned?: number;
-  multiplier?: number;
+export interface CoinData {
+  usd: number;
+  usd_market_cap: number;
 }
